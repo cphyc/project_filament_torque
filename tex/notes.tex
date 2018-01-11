@@ -240,7 +240,9 @@ To get the distribution of the filaments, we use the following algorithm, where 
 \item Initialize the variable $N_\text{sample} \leftarrow 0$.
 
 \item Let $\{\phi_i\}$ be $N$ equally spaced angles between $0$ and $2\pi$. Let $\rr_i = (R, \phi_i)$ be $N$ points on a circle of radius $R_c$.
-\item Compute the covariance matrix $\mathbf{C}$ of $\{\delta(\rr_i, R)\} = \{\delta_i\}$, where $R$ is some smoothing scale.
+\item Let a point, smoothed at a scale $R_\text{center}$ at the center of the circle and add it to the list of point.
+\item Compute the covariance matrix $\mathbf{C}(\{\delta_i\}, \delta_\text{center})$.
+\item Compute the covariance matrix $\mathbf{C}(\{\delta_i\}|\delta_\text{center} = \delta_c)$ and $\condmean{\delta_i}{\delta_\text{center} = \delta_c}$.
 \item\label{item:iii} Draw a realisation using a multivariate normal distribution of covariance $\mathbf{C}$
   \begin{equation}
     \{\delta_i\} \sim \mathcal{N}(0, \mathbf{C}).
@@ -315,11 +317,24 @@ The gradient-gradient correlations can be easily computed as well
   R^2\sin\theta_A\sin\theta_B\mean{\nabla_{\phi_A}\delta\nabla_{\phi_B}\delta} &= \xi''_{00}\frac{\partial d}{\partial \phi_A}\frac{\partial d}{\partial \phi_B} + \xi'_{00}\frac{\partial^2d}{\partial\phi_A\partial\phi_B}.
 \end{align}
 
-\subsection{Explicit values of the derivative of $\xi_{00}$}
+\subsection{Explicit values of the derivatives}
 Noting with a prime a partial derivative w.r.t. to $d$ and following derivation rules for the Bessel spherical harmonics, we get
 \begin{align}
-  \xi_{00}' &= -\frac{1}{d^2} \chi_{12}, \\
-  \xi_{00}'' &= \frac{1}{d^3}\left(\chi_{23}-\chi_{12}\right).
+  \xi_{00}' &= -\frac{\chi_{11}}{d}, \\
+  \xi_{00}'' &= \frac{\chi_{22}-\chi_{11}}{d^2}.
+\end{align}
+% The derivatives of the distances w.r.t. $\phi$ are
+% \begin{align}
+%   \frac{\partial d}{\partial \phi} & = \frac{-R \sin\theta_1\sin\theta_2\sin(\phi_2-\phi_1)}{\sqrt{2-2 \sin\theta_1 \sin\theta_2\cos(\phi_2-\phi_1 )+2 \cos\theta_1 \cos\theta_2)}},\\
+%   \frac{\partial^2 d}{\partial \phi^2} & = \frac{R \sin\theta_1\sin\theta_2(4(1+\cos\theta_1\cos\theta_2)\cos(\phi_1-\phi_2) - (3+\cos{2(\phi_1-\phi_2)})\sin\theta_1\sin\theta_2)}{4\sqrt{2}(1+\cos\theta_1\cos\theta_2-\cos(\phi_1-\phi_2)\sin\theta_1\sin\theta_2)^{3/2}}.
+% \end{align}
+The derivatives of the distance, evaluated at $\theta_1=\theta_2=\pi/2$ read
+\begin{align}
+  \frac{\partial d}{\partial \theta_1} = \frac{\partial d}{\partial \theta_2} &= 0, \\
+  \frac{\partial^2 d}{\partial\theta_1^2} = \frac{\partial^2 d}{\partial\theta_2^2} & = \frac{R \cos(\phi_1-\phi_2)}{\sqrt{2-2\cos(\phi_1-\phi_2)}},\\
+  \frac{\partial d}{\partial \phi_1} = -\frac{\partial d}{\partial \phi_2} &= \frac{R\sin(\phi_1-\phi_2)}{\sqrt{2-2\cos(\phi_1-\phi_2)}}, \\
+  \frac{\partial^2 d}{\partial \phi_1^2} = \frac{\partial^2 d}{\partial \phi_2^2} &= -\frac{R}{2}\left|\sin \frac{\phi_1-\phi_2}{2}\right|, \\
+  \frac{\partial^2 d}{\partial\theta\partial\phi} & = 0.
 \end{align}
 
 \end{document}
