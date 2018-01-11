@@ -1,0 +1,325 @@
+\documentclass[useAMS,usenatbib,babel,superscriptaddress]{mnras}
+
+\usepackage[english,english]{babel}
+\usepackage[tbtags]{amsmath}
+\usepackage{amssymb,amsfonts,textcomp}
+\usepackage{array}
+%\usepackage{supertabular}
+\usepackage{tabularx}
+\usepackage{hhline}
+\usepackage{hyperref}
+\usepackage{soul}
+\usepackage[usenames]{color}
+\usepackage{balance}
+%\usepackage{widetext}
+%\usepackage{algpseudocode}
+\usepackage{times}
+\bibliographystyle{mnras}
+\usepackage{mathtools}
+\usepackage{transparent}
+\usepackage{bm}           % bold fonts
+%\usepackage{xfrac}
+ \newcommand{\sfrac}[2]{#1/#2}
+\usepackage{balance}
+
+%\algrenewcommand\textproc{}% Disable uppercase in functions
+%\usepackage[applemac]{inputenc}
+\usepackage{wasysym}
+% \usepackage{siunitx}
+\newcommand{\SI}[2]{\ensuremath{#1~\mathrm{#2}}}
+\newcommand{\num}[1]{\ensuremath{#1}}
+
+\usepackage{ifthen}
+\usepackage{pdflscape}
+\usepackage{rotating}
+% \usepackage[margin=1in]{geometry}
+\usepackage{geometry}
+\usepackage{graphicx}
+
+% \usepackage[active,tightpage,graphics,floats]{preview}
+% \renewcommand\caption[1]{}
+% \PreviewBorder=0pt\relax
+
+
+\def\gtrsim{\lower.5ex\hbox{$\; \buildrel > \over \sim \;$}}
+
+
+\newcommand{\half}{{\sfrac{1}{2}} }
+\newcommand{\form}{\mathrm{f}}
+\newcommand{\nuf}{\nu_{\form}}
+\newcommand{\df}{\delta_{\form}}
+\newcommand{\R}{\mathcal{R}}
+\newcommand{\h}{\mathcal{H}}
+\newcommand{\D}{\mathrm{D}}
+\newcommand{\G}{\mathrm{G}}
+\newcommand{\Mpl}{M_\mathrm{Pl}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\del}{\delta}
+\newcommand{\Ds}{\Delta\sigma}
+\newcommand{\pd}{\partial}
+\newcommand{\dc}{\delta_{\mathrm{c}}}
+\newcommand{\nuc}{\nu_{\mathrm{c}}}
+\newcommand{\nucS}{\nu_{\mathrm{c},\S}}
+\newcommand{\nucv}{\nu_{\mathrm{c},v}}
+\newcommand{\barnuc}{\bar\nu_{\mathrm{c}}}
+\newcommand{\tnuc}{\tilde\nu_{\mathrm{c}}}
+\newcommand{\tnu}{\tilde\nu}
+\newcommand{\Df}{D_{\mathrm{f}}}
+\newcommand{\ec}{\epsilon_\times}
+\newcommand{\kk}{\mathbf{k}}
+\newcommand{\rr}{\mathbf{r}}
+\newcommand{\xx}{\mathbf{x}}
+\newcommand{\yy}{\mathbf{y}}
+\renewcommand{\L}{\mathrm{L}}
+\renewcommand{\S}{\mathcal{S}}
+\newcommand{\tr}{\mathrm{tr}}
+\newcommand{\erf}{\mathrm{erf}}
+\newcommand{\sigmas}{\sigma_\S}
+\newcommand{\Rs}{R_\S}
+\newcommand{\nus}{\nu_{\!\S}}
+
+
+
+
+\newcommand{\msun}{\ensuremath{M_\odot}}
+\newcommand{\mvir}{\ensuremath{M_{\rm vir}}}
+\newcommand{\rvir}{\ensuremath{R_{\rm vir}}}
+
+
+\newcommand{\condmean}[2]{
+  %\left
+  \langle #1
+  %\middle
+  |#2
+  %\right
+  \rangle}
+\newcommand{\mean}[1]{
+  %\left
+  \langle #1
+  %\right
+  \rangle}
+\newcommand{\kron}{{\delta}}
+\newcommand{\Var}[2]{
+  \mathrm{Var}\!\left( #1 \middle |
+    #2
+  \right)}
+\newcommand{\Cov}[2]{
+  \mathrm{Cov}\!\left( #1 \middle |
+    #2
+  \right)}
+\renewcommand{\d}{\mathrm{d}}             % right derivative
+\renewcommand{\P}{\mathbb{P}}             % Pressure
+\newcommand{\E}{\mathbb{E}}               % Energy
+\renewcommand{\vec}[1]{{\bm{#1}}}         % Vectors
+\newcommand{\norm}[1]{\left| #1 \right |} % norm
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+\newcommand{\shear}{q}
+\newcommand{\fup}{f_\mathrm{up}}
+\newcommand{\up}{\mathrm{up}}
+\newcommand{\first}{\mathrm{first}}
+\newcommand{\Tr}[1]{\mathrm{Tr}#1}
+
+
+
+
+% =============================
+\def \pr {{\it Phys. Rep.}}
+\def \prd {{\it Phys. Rev. D}}
+\def \prl {{\it Phys. Rev. Let.}}
+\def \apj {{\it ApJ}}
+\def \apjl {{\it ApJ Let.}}
+\def \apjs {{\it ApJ Sup.}}
+\def \pasj {{\it PASJ}}
+\def \araa {{\it ARA\&A}}
+\def \aa {{\it A\&A}}
+\def \aap {{\it A\&A}}
+\def \aj {{\it AJ}}
+\def \mnras {{\it MNRAS}}
+\def \nat {{\it Nature}}
+\def \procspie {{\it Proc.~SPIE}}
+\def \jcap {{\it JCAP} }
+
+% ==============================
+
+\definecolor{grey}{rgb}{0.75,0.75,0.75}
+\definecolor{Orange}{rgb}{1.0,0.5,0.15}
+\definecolor{brown}{rgb}{0.7,0.25,0.0}
+\definecolor{pink}{rgb}{1.0,0.5,0.5}
+\definecolor{darkerred}{rgb}{0.8,0,0}
+\definecolor{darkerblue}{rgb}{0,0,0.8}
+\definecolor{Blue}{rgb}{0,0.08,0.65}
+\definecolor{Red}{rgb}{0.65,0.08,0.05}
+\definecolor{Green}{rgb}{0.15,0.45,0.25}
+\def\blue{\color{Blue}}
+\def\red{\color{Red}}
+\def\orange{\color{Orange}}
+\def\green{\color{Green}}
+
+\newcommand{\dirac}[2]{\delta^{(#1)}\!\!\left(#2\right)}
+\newcommand{\TODO}[1]{{\red{\bf TODO}: #1}}
+\title{Constrains on the angular momentum of filamentary accretion}
+\author{Corentin Cadiou}
+
+\begin{document}
+\maketitle
+
+\section{Intro}
+\label{sec:intro}
+
+We'd like to compute the angular momentum at the location of the 3 major filaments. Simulations show that at medium redshifts, three filaments in a planar configuration are feeding the central halo. In the plane of the filaments (the one of the wall), the angular momentum onto the perpendicular axis is positive going from emptier walls to ones at higher densities. Because of the geometry of the problem, it is expected that two filaments have a positive angular momentum and one negative. As such, one can expect a net angular momentum, even under the global assumption of isotropic conditions.
+
+We define a simpler problem where a central halo, lying at an over-density $\nu_0$ is surrounded by 3 walls, defined by one point of overdensity $\nu_1<\nu_2<\nu_3$ -- the emptiest is the first. \TODO{make a nice plot here}. In the following, $i$ indices will denote $i\in \{1,2,3\}$. If $\nu_0$ is high enough and $\nu_i$ small enough, we expect three filaments delimiting the 3 walls. At a distance $R$ from the center, a filament in the plane is defined as a point where the gradient of the density on the sphere is null
+\begin{equation}
+  \left\lbrace
+    \begin{matrix}
+      \displaystyle\frac{\partial \delta}{R\partial \theta} = 0 \\ \\
+      \displaystyle\frac{\partial \delta}{R \sin\theta \partial \phi} = 0
+  \end{matrix}
+  \right.
+\end{equation}
+where the term $\sin\theta = 1$ on the plane. Let's note $\phi_{12}, \phi_{13}, \phi_{23}$ the angles defining the filaments. We can then compute the angular momentum
+\begin{equation}
+  M_{ij} = \frac{\partial \psi}{\partial \phi}(\phi_{ij}).
+\end{equation}
+The aim is then to compute the ratio between $>0$ and $<0$ angular momentum sources, e.g.
+\begin{equation}
+  \left|\frac{M_1}{M_2 + M_3} \right|.
+\end{equation}
+
+\section{Method}
+\label{sec:method}
+
+The correlation between the at 2 different points $a$ (resp. $b$) smoothed at scales $R_a$ (resp. $R_b$) separated by a distance $r$ reads
+\begin{equation}
+  \mean{\delta_a \delta_b} = \xi_{00}(R_a, R_b, r) \sigma(R_b)
+\end{equation}
+where
+\begin{align}
+  \xi_{\alpha\beta}(R_1, R_2, r) &= \int\d k \frac{k^2P(k)}{2\pi^2}W(kR_1)\frac{W(kR_2)}{\sigma(R_2)}\frac{j_\alpha(kr)}{(kr)^\beta},\\
+  \chi_{\alpha\beta}(R_1, R_2, r) &= \int\d k \frac{k^2P(k)}{2\pi^2}W(kR_1)\frac{W(kR_2)}{\sigma(R_2)}j_\alpha(kr)(kr)^\beta,\\
+\end{align}
+with $W$ the window function. The expression for a Top-Hat and a Gaussian are
+\begin{equation}
+  W_\text{TH}(x) = \frac{3j_1(x)}{x},\quad W_\text{G}(x) = e^{-x^2/2}.
+\end{equation}
+A filamentary condition can be set with on the sphere of radius $R$ for points matching
+\begin{align}
+  \nabla^{(2)} \delta & = 0,\\
+  \nabla^{(2)}\nabla^{(2)}\delta
+                      & = \Lambda^{-1}
+                        \begin{pmatrix}
+                          \lambda_1 & 0 \\ 0 & \lambda_2
+                        \end{pmatrix}\Lambda, \\
+\end{align}
+where a ${(2)}$ denotes a derivative on the sphere surface, $\lambda_1 \leq \lambda_2 \leq 0$ and $\Lambda$ is an orthonormal matrix. Using a Taylor expansion of the field in the vicinity of a filament, we get
+\begin{equation}
+  \nabla^{(2)} \delta = (\rr - \rr_\text{fil})\nabla^{(2)}\nabla^{(2)}\delta|_\text{fil}
+\end{equation}
+and hence
+\begin{equation}
+  \rr-\rr_\text{fil} = \nabla^{(2)}\delta\left(\nabla^{(2)}\nabla^{(2)}\delta|_\text{fil}\right)^{-1}
+\end{equation}
+The number density of saddle point is therefore
+\begin{equation}
+  n_\text{fil} = \dirac{2}{\nabla^{(2)}\delta} \left|\det{\nabla^{(2)}\nabla^{(2)}\delta|}\right|
+\end{equation}
+
+
+Let $\phi_j = \frac{2\pi j}{N}$ be $N$ equally spaced angles between $0$ and $2\pi$, and $\delta_j$ the of the over-density at $R, \phi_j$ smoothed at a scale $R_c$. The correlation matrix then reads
+% \begin{multline}
+%   \text{Cov}(\{\delta_j, \delta_i\}) = \\
+%   \begin{pmatrix}
+
+%   \end{pmatrix}
+% \end{multline}
+
+\subsection{Estimating location of filaments}
+
+To get the distribution of the filaments, we use the following algorithm, where $N_\text{sample}$ is the number of draws containing three filaments
+\begin{enumerate}
+\item Initialize the variable $N_\text{sample} \leftarrow 0$.
+
+\item Let $\{\phi_i\}$ be $N$ equally spaced angles between $0$ and $2\pi$. Let $\rr_i = (R, \phi_i)$ be $N$ points on a circle of radius $R_c$.
+\item Compute the covariance matrix $\mathbf{C}$ of $\{\delta(\rr_i, R)\} = \{\delta_i\}$, where $R$ is some smoothing scale.
+\item\label{item:iii} Draw a realisation using a multivariate normal distribution of covariance $\mathbf{C}$
+  \begin{equation}
+    \{\delta_i\} \sim \mathcal{N}(0, \mathbf{C}).
+  \end{equation}
+\item Find the local maxima as defined by $\delta_{i_m-2} \leq \delta_{i_m-1} \leq \delta_{i_m}$ and $\delta_{i_m+2} \leq \delta_{i_m+1} \leq \delta_{i_m}$ and order them by decreasing height.
+\item If there are three or more local maxima then
+  \begin{enumerate}
+  \item Get the three highest $\delta_{i_0} \geq \delta_{i_1} \geq \delta_{i_2}$, located at $\phi_0, \phi_1, \phi_2$.
+  \item Perform a rotation $\phi_0\leftarrow 0$, $\phi_1\leftarrow\phi_1 - \phi_0$ and $\phi_2\leftarrow\phi_2 - \phi_0$.
+  \item If $\phi_1 > \pi$, then $\phi_1\leftarrow 2\pi-\phi_1$ and $\phi_2\leftarrow 2\pi-\phi_2$.
+  \item Store the result and increase the sample counter $N_\text{sample}\leftarrow N_\text{sample}+1$.
+  \end{enumerate}
+\item If $N_\text{sample} = N_\text{sample, target}$, stop, else go back to \ref{item:iii}.
+\end{enumerate}
+
+Using a $\Lambda$CDM power spectrum with a Top-Hat filter, we get the result of Figure~\ref{fig:distrib_phi}.
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{figures/hist_phi}
+  \caption{Histogram of $\phi_1,\phi_2$ smoothed at scale $R=\SI{5}{Mpc/h}$ on a circle of radius $R_c=\SI{10}{Mpc/h}$. The sample is made of 1,400,000 elements.}
+  \label{fig:distrib_phi}
+\end{figure}
+
+
+\appendix
+
+\section{Computation of correlation coefficients}
+
+The distance between two points $A = (R, \theta_A, \phi_A)$ and $B = (R, \theta_B, \phi_B)$ is
+\begin{equation}
+  d^2 = 2R^2\left(1-\left[{\sin\theta_A\sin\theta_B}{\cos(\phi_A-\phi_B)}+\cos\theta_A\cos\theta_B\right]\right).
+\end{equation}
+If $\theta=\theta'=\pi/2$, then
+\begin{equation}
+  d(\phi) = R(1-\cos\phi).
+\end{equation}
+Given that the correlation at distance $d$ is
+\begin{equation}
+  \mean{\delta_A\delta_B} = \xi_{00}(R, R, d) \sigma
+\end{equation}
+and that the (unitless) Hessian on the sphere manifold reads\footnote{see \href{https://math.stackexchange.com/questions/2036124/hessian-matrix-in-spherical-coordinates}{here}. For the real Hessian, one should divide eq.~(\ref{eq:hessian}) by $R^2$.}
+\begin{equation}
+  \label{eq:hessian}
+  \mathbf{H}[\delta] =
+  \begin{pmatrix}
+    \partial_{\theta\theta}\delta + \cos\phi\sin\phi\partial_\phi \delta & \partial_{\theta\phi}\delta - \frac{\cos\phi}{\sin\phi}\partial_\theta\delta \\
+    \partial_{\theta\phi}\delta - \frac{\cos\phi}{\sin\phi}\partial_\theta\delta & \partial_{\phi\phi}\delta
+  \end{pmatrix},
+\end{equation}
+where in our case $\theta =\pi/2$ and $\phi\in[0, 2\pi]$ (we should uniformize with the previous section where $\theta\leftrightarrow\phi$). For the sake of simplicity and because the two points have a symmetric role, we have omitted the subscript. It follows that (\TODO{missing factor $\sigma$ in the formulae})
+\begin{align}
+  \mean{\delta H_{\phi\phi}}
+  &= \frac{\partial^2}{\partial\phi\phi}\xi_{00} \nonumber \\
+  &= \xi''_{00}\left(\frac{\partial d}{\partial \phi}\right)^2 + \xi'_{00}\frac{\partial^2 d}{\partial\phi^2},\\
+  \mean{\delta H_{\theta\theta}}
+  &= \frac{\partial^2 \xi_{00}}{\partial\theta^2}+\cos\phi\sin\phi \frac{\partial \xi_{00}}{\partial\phi} \nonumber\\
+  &= \xi''_{00}\left(\frac{\partial d}{\partial \theta}\right)^2 + \xi'_{00}\left(\frac{\partial^2 d}{\partial\theta^2} + \cos\phi\sin\phi\frac{\partial d}{\partial \phi}\right),\\
+  \mean{\delta H_{\theta\phi}}
+  & = \frac{\partial^2 \xi_{00}}{\partial\theta\partial\phi}-\frac{\cos\phi}{\sin\phi}\frac{\partial \xi_{00}}{\partial\theta} \nonumber \\
+  & = \xi''_{00}\frac{\partial d}{\partial\theta}\frac{\partial d}{\partial\phi} + \xi'_{00}\frac{\partial^2 d}{\partial\theta\partial\phi}.
+\end{align}
+The density-gradient correlation read
+\begin{align}
+  R\mean{\delta \nabla_\theta \delta} & = \xi'_{00}\frac{\partial d}{\partial\theta},\\
+  R\sin\phi\mean{\delta \nabla_\phi \delta} & = \xi'_{00}\frac{\partial d}{\partial\phi}.
+\end{align}
+The gradient-gradient correlations can be easily computed as well
+\begin{align}
+  R^2\mean{\nabla_{\theta_A}\delta\nabla_{\theta_B}\delta} &= \xi''_{00}\frac{\partial d}{\partial \theta_A}\frac{\partial d}{\partial \theta_B} + \xi'_{00}\frac{\partial^2d}{\partial\theta_A\partial\theta_B}, \\
+  R^2\sin\theta_B\mean{\nabla_{\theta_A}\delta\nabla_{\phi_B}\delta} &= \xi''_{00}\frac{\partial d}{\partial \theta_A}\frac{\partial d}{\partial \phi_B} + \xi'_{00}\frac{\partial^2d}{\partial\theta_A\partial\phi_B}, \\
+  R^2\sin\theta_A\mean{\nabla_{\phi_A}\delta\nabla_{\theta_B}\delta} &= \xi''_{00}\frac{\partial d}{\partial \phi_A}\frac{\partial d}{\partial \theta_B} + \xi'_{00}\frac{\partial^2d}{\partial\phi_A\partial\theta_B}, \\
+  R^2\sin\theta_A\sin\theta_B\mean{\nabla_{\phi_A}\delta\nabla_{\phi_B}\delta} &= \xi''_{00}\frac{\partial d}{\partial \phi_A}\frac{\partial d}{\partial \phi_B} + \xi'_{00}\frac{\partial^2d}{\partial\phi_A\partial\phi_B}.
+\end{align}
+
+\subsection{Explicit values of the derivative of $\xi_{00}$}
+Noting with a prime a partial derivative w.r.t. to $d$ and following derivation rules for the Bessel spherical harmonics, we get
+\begin{align}
+  \xi_{00}' &= -\frac{1}{d^2} \chi_{12}, \\
+  \xi_{00}'' &= \frac{1}{d^3}\left(\chi_{23}-\chi_{12}\right).
+\end{align}
+
+\end{document}
