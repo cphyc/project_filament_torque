@@ -4,11 +4,19 @@ from tqdm import tqdm
 import os
 
 import angular_utils as tu
+import utils as U
 from utils import W1TH, W1G, trapz, get_maxis
 
+###############################################################################
+# Parameters
+###############################################################################
 # Radius of circle
-Rc = 10  # radius of circle, in Mpc/h
-R  = 5   # smoothing scale, in Mpc/h
+Rc = 10      # radius of circle, in Mpc/h
+R  = 5       # smoothing scale, in Mpc/h
+Rcenter = 5  # smoothing scale at center, in Mpc/h
+Npts = 100
+
+
 k, Pk, _ = np.loadtxt('power.dat', skiprows=1).T.astype(np.float32)
 Pk *= 2*np.pi**2 * 4*np.pi
 
@@ -17,26 +25,52 @@ Pk *= 2*np.pi**2 * 4*np.pi
 # Compute the covariance matrix
 ###############################################################################
 # Draw positions on the circle
-phi = np.linspace(0, 2*np.pi, 200, endpoint=False, dtype=np.float32)
+phi = np.linspace(0, 2*np.pi, Npts + 1, dtype=np.float32)
+theta = np.ones_like(phi) * np.pi/2
+Radii = np.ones_like(phi) * Rc
+Radii[-1] = 0
+
+pos = Radii * np.array([np.sin(theta) * np.cos(phi),
+                        np.sin(theta) * np.sin(phi),
+                        np.cos(theta)])
 
 # Compute 2-point distances
-dist = Rc * (1 - np.cos(phi[:, None] - phi[None, :]))
+dist = np.sqrt(np.sum((pos[:, :, None] - pos[:, None, :])**2, axis=0))
 
-# Compute the correlation
+# Array containing the smoothing scales
+RR = np.ones_like(phi) * R
+RR[-1] = Rcenter
+
+# Compute the correlation delta-delta
 print("Computing correlation coefficients")
 kr = k[None, None, :] * dist[:, :, None]
-kR = k[None, None, :]*R
-k2Pk = k[None, None, :]**2*Pk[None, None, :]
+k2Pk = k[None, None, :]**2 * Pk[None, None, :]
 j1kr = np.where(kr == 0, 1/3, j(1, kr) / kr)
+
+# Get Kernel
 W1 = W1G
-xi00 = trapz(k2Pk * W1(kR)**2 * j(0, kr) / (2*np.pi**2), k)
-# xi11 = trapz(k2Pk * W1(kR)**2 * j1kr / (2*np.pi**2), k)
-# xi20 = trapz(k2Pk * W1(kR)**2 * j(2, kr) / (2*np.pi**2), k)
+W1kR = W1(k[None, :] * RR[:, None])
+W1kRW1kR = W1kR[:, None, :] * W1kR[None, :, :]
+
+xi00 = trapz(k2Pk * W1kRW1kR * j(0, kr) / (2*np.pi**2), k)
+# xi11 = trapz(k2Pk * W1kRW1kR * j1kr / (2*np.pi**2), k)
+# xi20 = trapz(k2Pk * W1kRW1kR * j(2, kr) / (2*np.pi**2), k)
 
 # Covariance is just xi00
 cov = xi00
 mean = np.zeros_like(phi)
 
+###############################################################################
+# Constrain to the value at center
+###############################################################################
+constr = np.empty_like(mean) * np.nan
+constr[-1] = 1.69
+
+# Constrain
+mean, cov = U.constrain(mean, cov, constr)
+
+# No constrain
+# mean, cov = mean[:-1], cov[:-1, :-1]
 
 ###############################################################################
 # Draw random sample
@@ -51,6 +85,10 @@ u, s, v = np.dual.svd(cov)
 
 
 def multivariate_normal(size):
+    '''
+    Draw random number from a multivariate_normal distribution. This
+    is the same as numpy's implementation (but the variables u, s, v
+    are cached)'''
     shape = [size, len(mean)]
     x = np.random.standard_normal(size=shape)
     x = np.dot(x, np.sqrt(s)[:, None] * v)
@@ -61,15 +99,15 @@ def multivariate_normal(size):
 np.random.seed(16091992)
 
 try:
-    if os.path.exists('data.h5'):
-        phi1_f, phi2_f, v0_f, v1_f, v2_f = tu.load_data()
-        prog.update(len(phi1_f))
+    # if os.path.exists('data.h5'):
+    #     phi1_f, phi2_f, v0_f, v1_f, v2_f = tu.load_data()
+    #     prog.update(len(phi1_f))
 
     while len(phi1_f) < Ntot:
         sample = multivariate_normal(Nperdraw).astype(np.float32)
         # sample = np.random.multivariate_normal(mean, cov, size=Nperdraw)
         m0, m1, m2, v0, v1, v2 = get_maxis(sample)
-        mask = m0 >= 0
+        mask = (m0 >= 0) & (v2 > 0)
         phi0 = phi[m0[mask]]
         phi1 = phi[m1[mask]]
         phi2 = phi[m2[mask]]
