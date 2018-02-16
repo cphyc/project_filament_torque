@@ -143,4 +143,68 @@ contains
     call xi(n, -m, R1, R2, r, nR, res)
   end subroutine chi
 
+  subroutine compute_coeff(R, pos, Npts, nn, mm, Ncoeff, res)
+    ! Compute the xi coefficients given an array of position and smoothing scales
+    real(8), intent(in), dimension(Npts) :: R
+    real(8), intent(in), dimension(Npts, 3) :: pos
+    integer, intent(in), dimension(Ncoeff) :: nn, mm
+    integer, intent(in) :: Npts, Ncoeff
+
+    real(8), intent(out), dimension(Ncoeff, Npts, Npts) :: res
+
+    integer :: icoeff, n, m
+    integer :: ipt1, ipt2
+    integer :: nk
+    real(8), dimension(3) :: x1, x2
+    real(8) :: epsilon, d
+    real(8), dimension(size(k)) :: WkR1, WkR2, tmp1, tmp2, tmp3, integrand, kr, krmin
+
+    epsilon = 1d-5
+
+    nk = size(k)
+    tmp1 = k2Pk / twopi2
+
+    ! Compute correlation coefficients
+    do ipt1 = 1, Npts
+       x1(:) = pos(ipt1, :)
+       WkR1 = W(k * R(ipt1))
+       tmp2 = tmp1 * WkR1
+
+       do ipt2 = 1, ipt1
+          x2(:) = pos(ipt2, :)
+          WkR2 = W(k * R(ipt2))
+
+          d = sqrt(sum((x2 - x1)**2))
+
+          ! Use small distance to prevent nan
+          kr = k * d
+          krmin = k * max(epsilon, d)
+
+          tmp3 = tmp2 * WkR2
+          do icoeff = 1, Ncoeff
+             n = nn(icoeff)
+             m = mm(icoeff)
+
+             if (m > 0) then
+                integrand = tmp3 * besselj(n, krmin, nk) / krmin**m
+             else
+                integrand = tmp3 * besselj(n, kr, nk) / kr**m
+             end if
+
+             res(icoeff, ipt1, ipt2) = trapz(integrand, k, nk)
+          end do
+       end do
+    end do
+
+    ! Symmetrize result
+    do ipt1 = 1, Npts
+       do ipt2 = 1, ipt1
+          do icoeff = 1, Ncoeff
+             res(icoeff, ipt2, ipt1) = res(icoeff, ipt1, ipt2)
+          end do
+       end do
+    end do
+
+  end subroutine compute_coeff
+
 end module correlation_functions
