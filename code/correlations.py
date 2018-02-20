@@ -285,6 +285,7 @@ class Correlator(object):
                 (np.dot(dX, [0, 1, 0]) == 0 and odd(iky)) or
                 (np.dot(dX, [0, 0, 1]) == 0 and odd(ikz))):
                 cov[i1, i2] = cov[i2, i1] = 0
+                continue
 
             R1 = RR[i1]
             R2 = RR[i2]
@@ -298,7 +299,6 @@ class Correlator(object):
 
             cov[i2, i1] = cov[i1, i2] = sign * integral
 
-        cov = np.round(cov, 8)
         self._covariance = cov
 
         if any(np.linalg.eigvalsh(cov) <= 0):
@@ -333,41 +333,139 @@ class Correlator(object):
         mean_c, cov_c = constrain(mean, self.cov, cons)
         return mean_c, cov_c
 
-    def _plot_cov(self, cov, labels):
+    def _plot_cov(self, cov, labels, *args, symlog=False, **kwa):
         '''
         Covariance plot helper.
         '''
-        plt.imshow(cov, cmap='seismic', vmin=-1, vmax=1)
+
+        if symlog:
+            tmp = np.abs(self.cov_c)
+            # Get minimal non null value
+            vmin = np.nanmin(np.where(tmp == 0, np.nan, tmp))
+
+            # Round it to closer power of 10
+            vmin = 10**(np.floor(np.log10(vmin)))
+
+            kwa.update({'norm': mpl.colors.SymLogNorm(vmin)})
+
+        plt.imshow(cov, cmap='seismic', vmin=-1, vmax=1, *args, **kwa)
         N, _ = cov.shape
 
         ticks = np.arange(N)
         plt.xticks(ticks, labels)
         plt.yticks(ticks, labels)
 
-    def plot_cov(self):
+    def plot_cov(self, *args, **kwa):
         '''Plot the covariance matrix.'''
-        self._plot_cov(self.cov, self.labels)
+        self._plot_cov(self.cov, self.labels, *args, **kwa)
 
-    def plot_cov_c(self):
+    def plot_cov_c(self, *args, **kwa):
         '''Plot the constrained matrix.'''
-        self._plot_cov(self.cov_c, self.labels_c)
+        self._plot_cov(self.cov_c, self.labels_c, *args, **kwa)
 
+
+    def _fmt_element(self, element, size=10):
+        if element == 0:
+            # return '{:>10}'.format('')
+            return ' '*size
+        else:
+            if size < 5:
+                raise Exception('Size too small')
+            fmtstring = '{{:{}.{}f}}'.format(size, size-5)
+            return fmtstring.format(element)
+
+    def describe(self):
+        cov = self.cov
+        print('#'*80)
+        print('Covariance matrix')
+        for i in range(cov.shape[0]):
+            if i == 0:
+                print('/  ', end='')
+            elif i == cov.shape[0]-1:
+                print('\\  ', end='')
+            else:
+                print('|  ', end='')
+            for j in range(cov.shape[1]):
+                print(self._fmt_element(cov[i, j]))
+
+            if i == 0:
+                print('  \\')
+            elif i == cov.shape[0]-1:
+                print('  /')
+            else:
+                print('  |')
+
+    def describe_table(self, order=None, size=10):
+        from IPython.display import display, Markdown
+
+        if order is None:
+            N = len(self.cov)
+            cov = self.cov
+            labels = self.labels
+        else:
+            cov = np.zeros_like(self.cov)
+            N = len(cov)
+            cov = self.cov[order][:, order]
+            labels = np.array(self.labels)[order]
+
+        header = '''
+        | | {header} |
+        |-|{sep}|
+        '''.format(
+            header=' | '.join(labels),
+            sep='-|-'.join(('' for _ in range(N)))
+        )
+        table = '\n'.join((l.strip() for l in header.split('\n')))
+
+        for i, l in enumerate(labels):
+            line = '|{label}|{content}|\n'.format(
+                label=l,
+                content=' | '.join((
+                    '$%s$' % self._fmt_element(cov[i, j], size)
+                    for j in range(N)
+                    )
+                )
+            )
+
+            table += line
+        # return table
+        return display(Markdown(table))
 
 def constrain(mean, cov, values):
     '''Return the constrained mean and covariance given the values.
     values is an array of same length as mean, with np.nan where you don't want
     any constrain and the value elsewhere.
 
-    parameters:
-    * mean, (N, ) the unconstrained mean
-    * cov, (N, N,) the unconstrained covariance matrix
-    * values, (N, ) the constrain, containing n non-nan values
+    Parameters
+    ---------
+    mean : array_like, (N, )
+        The (unconstrained) mean
+    cov : array_like, (N, N)
+        The (unconstrained) covariance matrix
+    values : array_like (N, )
+        The values of the constrain. See the notes for the format of this array
 
-    returns:
-    * (N-n, ) the constrained mean
-    * (N-n, N-n) the constrained variance'''
+    Returns
+    -------
+    mean_c : array_like, (N-n, )
+         The constrained mean
+    cov_c : array_like, (N-n, N-n)
+         The constrained variance
+
+    Note
+    ----
+    The `values` array can be filled either with scalars, nan of
+    inf. The meaning of these is given in the table below.
+    Type   | Meaning
+    -------|------------------------
+    float  | Value at this location
+    nan    | No constrain
+    inf    | Drop this location
+    '''
+
+    # Keep `nan` elements, constrain finite ones
     cons = np.isfinite(values)
-    keep = np.logical_not(cons)
+    keep = np.isnan(cons)
 
     # Keep only finite values (other values: no constrain)
     vals = values[cons]
