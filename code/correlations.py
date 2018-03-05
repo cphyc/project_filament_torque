@@ -5,15 +5,16 @@ from numba import jit
 from itertools import combinations_with_replacement
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-
+import matplotlib as mpl
+from functools import lru_cache, partial
+from multiprocessing import Pool
 
 k, Pk, _ = np.loadtxt('./power.dat', skiprows=1).T
 Pk *= 2*np.pi**2 * 4*np.pi
 k = k[::10]
 Pk = Pk[::10]
 
-# TODO: Pk -> k**-2
-Pk = k**-2
+# Pk = k**-2
 
 twopi2 = 2 * np.pi**2
 dk = np.diff(k)
@@ -23,6 +24,68 @@ def sigma(i, R):
     # Note: below we use exp(-(kR)**2) == exp(-(kR)**2/2) **2
     integrand = k**(2*i+2) * Pk * np.exp(-(k * R)**2) / twopi2
     return sqrt(np.sum((integrand[1:] + integrand[:-1]) * dk) / 2)
+
+
+def odd(i):
+    return (i % 2) == 1
+
+
+@lru_cache(maxsize=None)
+def _correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2,
+                 sign1, sign2,
+                 nsigma1, nsigma2):
+    dX = np.array([dx, dy, dz])
+    # Compute sigmas
+
+    s1s2 = (
+        sign1 * sigma(nsigma1, R1) *
+        sign2 * sigma(nsigma2, R2))
+
+    # Integrate
+    res = dblquad(
+        integrand,
+        0, pi,                                # theta bounds
+        lambda theta: 0, lambda theta: 2*pi,  # phi bounds
+        epsrel=1e-3, epsabs=1e-6,
+        args=(ikx, iky, ikz, ikk, dX, R1, R2))[0]
+
+    # Divide by sigmas
+    res /= s1s2
+    return res
+
+
+def _compute_one(i1i2, X,
+                 kxfactor, kyfactor, kzfactor, kfactor,
+                 signs, sigma_f, RR):
+    i1, i2 = i1i2
+    dX = X[i2, :] - X[i1, :]
+    d = sqrt(sum(dX**2))
+    ikx, iky, ikz = (kxfactor[i1]+kxfactor[i2],
+                     kyfactor[i1]+kyfactor[i2],
+                     kzfactor[i1]+kzfactor[i2])
+    ikk = kfactor[i1]+kfactor[i2]
+
+    # Odd terms at 0 correlations aren't correlated
+    if d == 0 and (odd(ikx) or odd(iky) or odd(ikz)):
+        return i1, i2, 0
+
+    # Remove odd terms in direction perpendicular to separation
+    if ( (np.dot(dX, [1, 0, 0]) == 0 and odd(ikx)) or
+         (np.dot(dX, [0, 1, 0]) == 0 and odd(iky)) or
+         (np.dot(dX, [0, 0, 1]) == 0 and odd(ikz))):
+        return i1, i2, 0
+
+    R1 = RR[i1]
+    R2 = RR[i2]
+
+    sign = (-1)**(kxfactor[i2] + kyfactor[i2] + kzfactor[i2])
+    res = _correlation(ikx, iky, ikz, ikk,
+                       dX[0], dX[1], dX[2],
+                       R1, R2,
+                       signs[i1], signs[i2],
+                       sigma_f[i1], sigma_f[i2]
+    )
+    return i1, i2, res * sign
 
 
 kx = lambda theta, phi: k * sin(theta) * cos(phi)
@@ -70,10 +133,6 @@ def integrand(phi, theta, ikx, iky, ikz, ikk, dX, R1, R2):
     return integral
 
 
-def odd(i):
-    return (i % 2) == 1
-
-
 class Correlator(object):
     def __init__(self):
         self.kxfactor = []
@@ -89,22 +148,22 @@ class Correlator(object):
 
         self.Npts = 0
 
-    def add_point(self, pos, elements, R, constrains={}, name=None):
+    def add_point(self, pos, elements, R, constrains={}, name=None, frame=None):
         '''Add a constrain at position pos with given elements
 
         Param
         -----
-        * pos: array_like
+        pos: array_like
             Spatial position of the point
-        * elements: str list
+        elements: str list
             Can be potential, acceleration, density, density_gradient,
             hessian.
-        * R: float
+        R: float
             Smoothing scale at the point
-        * values, dict_like:
+        values, dict_like:
             Values of the elements at the point, indexed by the
             element type (e.g. {'density': 1.68}).
-        * name, optional, str:
+        name, optional, str:
             Name to give to the point. By default, number it.
 
         Note
@@ -191,6 +250,8 @@ class Correlator(object):
                 labels += [r'$h_{xx}^{%(name)s}$', r'$h_{yy}^{%(name)s}$', r'$h_{zz}^{%(name)s}$',
                            r'$h_{xy}^{%(name)s}$', r'$h_{xz}^{%(name)s}$', r'$h_{yz}^{%(name)s}$']
                 add(e, 6)
+            else:
+                print('Do not know %s.' % e)
 
         self.positions = np.concatenate((self.positions, np.array(new_pos)))
         self.kxfactor.extend(kx)
@@ -244,60 +305,21 @@ class Correlator(object):
 
         cov = np.zeros((Ndim, Ndim))
 
-        def correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2):
-            dX = np.array([dx, dy, dz])
-            # Compute sigmas
-            s1s2 = (
-                signs[i1] * sigma(sigma_f[i1], R1) *
-                signs[i2] * sigma(sigma_f[i2], R2))
-
-            # Integrate
-            res = dblquad(
-                integrand,
-                0, pi,                                # theta bounds
-                lambda theta: 0, lambda theta: 2*pi,  # phi bounds
-                epsrel=1e-3, epsabs=1e-6,
-                args=(ikx, iky, ikz, ikk, dX, R1, R2))[0]
-
-            # Divide by sigmas
-            res /= s1s2
-            return res
-
         # Loop on all combinations of terms, with replacement
         iterator = combinations_with_replacement(range(Ndim), 2)
-        for i1, i2 in tqdm(iterator,
-                           total=Ndim*(Ndim+1)//2,
-                           desc='%sx%s' % (Ndim, Ndim)):
-            dX = X[i2, :] - X[i1, :]
-            d = sqrt(sum(dX**2))
-            ikx, iky, ikz = (kxfactor[i1]+kxfactor[i2],
-                             kyfactor[i1]+kyfactor[i2],
-                             kzfactor[i1]+kzfactor[i2])
-            ikk = kfactor[i1]+kfactor[i2]
 
-            # Odd terms at 0 correlations aren't correlated
-            if d == 0 and (odd(ikx) or odd(iky) or odd(ikz)):
-                cov[i1, i2] = cov[i2, i1] = 0
-                continue
+        fun = partial(_compute_one,
+                      X=X,
+                      kxfactor=kxfactor, kyfactor=kyfactor, kzfactor=kzfactor,
+                      kfactor=kfactor, signs=signs, sigma_f=sigma_f,
+                      RR=RR)
 
-            # Remove odd terms in direction perpendicular to separation
-            if ((np.dot(dX, [1, 0, 0]) == 0 and odd(ikx)) or
-                (np.dot(dX, [0, 1, 0]) == 0 and odd(iky)) or
-                (np.dot(dX, [0, 0, 1]) == 0 and odd(ikz))):
-                cov[i1, i2] = cov[i2, i1] = 0
-                continue
-
-            R1 = RR[i1]
-            R2 = RR[i2]
-
-            integral = correlation(ikx, iky, ikz, ikk,
-                                   dX[0], dX[1], dX[2],
-                                   R1, R2)
-
-            # Compute sign
-            sign = (-1)**(kxfactor[i2] + kyfactor[i2] + kzfactor[i2])
-
-            cov[i2, i1] = cov[i1, i2] = sign * integral
+        with Pool() as p:
+            for i1, i2, value in tqdm(p.imap_unordered(
+                    fun, iterator,
+                    chunksize=100),
+                                      total=Ndim*(Ndim+1)//2):
+                cov[i1, i2] = cov[i2, i1] = value
 
         self._covariance = cov
 
@@ -365,8 +387,7 @@ class Correlator(object):
 
 
     def _fmt_element(self, element, size=10):
-        if element == 0:
-            # return '{:>10}'.format('')
+        if np.isclose(element, 0):
             return ' '*size
         else:
             if size < 5:
@@ -395,18 +416,19 @@ class Correlator(object):
             else:
                 print('  |')
 
-    def describe_table(self, order=None, size=10):
+    def describe_table(self, order=None, size=10, constrained=False):
         from IPython.display import display, Markdown
 
+        _cov = self.cov_c if constrained else self.cov
+        _labels = self.labels_c if constrained else self.labels
         if order is None:
-            N = len(self.cov)
-            cov = self.cov
-            labels = self.labels
+            N = len(_cov)
+            cov = _cov
+            labels = _labels
         else:
-            cov = np.zeros_like(self.cov)
-            N = len(cov)
-            cov = self.cov[order][:, order]
-            labels = np.array(self.labels)[order]
+            N = len(_cov)
+            cov = _cov[order][:, order]
+            labels = np.array(_labels)[order]
 
         header = '''
         | | {header} |
@@ -465,7 +487,7 @@ def constrain(mean, cov, values):
 
     # Keep `nan` elements, constrain finite ones
     cons = np.isfinite(values)
-    keep = np.isnan(cons)
+    keep = np.isnan(values)
 
     # Keep only finite values (other values: no constrain)
     vals = values[cons]
