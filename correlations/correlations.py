@@ -7,12 +7,12 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from functools import lru_cache, partial
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 k, Pk, _ = np.loadtxt('./power.dat', skiprows=1).T
 Pk *= 2*np.pi**2 * 4*np.pi
-k = k[::10]
-Pk = Pk[::10]
+k = k[::50]
+Pk = k**1  # Pk[::10]
 
 # Pk = k**-2
 
@@ -56,8 +56,11 @@ def _correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2,
 
 def _compute_one(i1i2, X,
                  kxfactor, kyfactor, kzfactor, kfactor,
-                 signs, sigma_f, RR):
+                 signs, sigma_f, RR, constrains):
     i1, i2 = i1i2
+    # if np.isinf(constrains[i1]) or np.isinf(constrains[i2]):
+    #     return i1, i2, np.nan
+
     dX = X[i2, :] - X[i1, :]
     d = sqrt(sum(dX**2))
     ikx, iky, ikz = (kxfactor[i1]+kxfactor[i2],
@@ -87,10 +90,10 @@ def _compute_one(i1i2, X,
     )
     return i1, i2, res * sign
 
+# kx = lambda theta, phi: k * sin(theta) * cos(phi)
+# ky = lambda theta, phi: k * sin(theta) * sin(phi)
+# kz = lambda theta, phi: k * cos(theta)
 
-kx = lambda theta, phi: k * sin(theta) * cos(phi)
-ky = lambda theta, phi: k * sin(theta) * sin(phi)
-kz = lambda theta, phi: k * cos(theta)
 
 k2Pk = k**2 * Pk / (8*np.pi**3)
 k2 = k**2
@@ -147,6 +150,9 @@ class Correlator(object):
         self.signs = []
 
         self.Npts = 0
+        self.k = k
+        self.Pk = Pk
+
 
     def add_point(self, pos, elements, R, constrains={}, name=None, frame=None):
         '''Add a constrain at position pos with given elements
@@ -312,12 +318,13 @@ class Correlator(object):
                       X=X,
                       kxfactor=kxfactor, kyfactor=kyfactor, kzfactor=kzfactor,
                       kfactor=kfactor, signs=signs, sigma_f=sigma_f,
-                      RR=RR)
+                      RR=RR, constrains=self.constrains)
 
         with Pool() as p:
+            print('Running with %s processes.' % cpu_count())
             for i1, i2, value in tqdm(p.imap_unordered(
                     fun, iterator,
-                    chunksize=100),
+                    chunksize=Ndim//2),
                                       total=Ndim*(Ndim+1)//2):
                 cov[i1, i2] = cov[i2, i1] = value
 
